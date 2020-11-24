@@ -105,7 +105,7 @@ public class DummyAddin : IPDNPlugin
                     stateStack.Push(newState);
                     transitionStack.Push(tmpQueue);
                 }
-                visitedStates[newState.States].Neighbours.Add(stateTmp);
+                visitedStates[stateTmp.States].Neighbours.Add(visitedStates[newState.States]);
             }
         }
 
@@ -119,7 +119,7 @@ public class DummyAddin : IPDNPlugin
                 {
                     foreach (var nstate in entry.Value.Neighbours)
                     {
-                        file.WriteLine(entry.Value.toString() + "->" + nstate.toString()+";");
+                        file.WriteLine(entry.Value.toString() + "->" + nstate.toString() + ";");
                     }
                 }
                 file.Write("}");

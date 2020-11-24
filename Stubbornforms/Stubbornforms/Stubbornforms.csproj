@@ -37,10 +37,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PetriDotNet">
-      <HintPath>..\..\..\..\petridotnet\PetriDotNet.exe</HintPath>
+      <HintPath>..\..\..\petridotnet\PetriDotNet.exe</HintPath>
     </Reference>
     <Reference Include="PetriNetBase">
-      <HintPath>..\..\..\..\petridotnet\PetriNetBase.dll</HintPath>
+      <HintPath>..\..\..\petridotnet\PetriNetBase.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
