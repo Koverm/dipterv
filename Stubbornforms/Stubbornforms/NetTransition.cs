@@ -12,9 +12,12 @@ namespace Stubbornforms
     {
         public int[] inEdges { get; private set; }
         public int[] outEdges { get; private set; }
+        public string Name { get; private set; }
 
         public NetTransition(List<Place> places, Transition transition)
         {
+            Name = transition.Name;
+
             inEdges = new int[places.Count];
             outEdges = new int[places.Count];
 
