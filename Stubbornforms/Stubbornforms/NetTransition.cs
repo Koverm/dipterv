@@ -35,7 +35,7 @@ namespace Stubbornforms
                 if (i > -1) {
                     inEdges[i] = edge.Weight;
                 }
-                
+
             }
 
             List<Edge> outputEdges = transition.OutputEdges;
@@ -49,6 +49,21 @@ namespace Stubbornforms
                 }
 
             }
+
+        }
+
+        public List<NetTransition> F1(List<NetTransition> transitions, NetState state){
+            List<NetTransition> result = new List<NetTransition>();
+
+            foreach (var item in transitions)
+            {
+
+            }
+
+            return result;
+        }
+        public List<NetTransition> F2(List<NetTransition> transitions, NetState state)
+        {
 
         }
 

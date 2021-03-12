@@ -258,20 +258,14 @@ public class StateSpace : IPDNPlugin
             List<NetTransition> netTransitions = new List<NetTransition>();
             List<Place> places = pn.GetPlaces();
             NetState ns = new NetState(places);
-            List<NetTransition> fireableTransitions = new List<NetTransition>();
+            
             foreach (var tran in tranzitions)
             {
                 netTransitions.Add(new NetTransition(places, tran));
             }
-            foreach (var trans in netTransitions)
-            {
-                if (ns.fireable(trans))
-                {
-                    fireableTransitions.Add(trans);
-                }
-            }
+            
             string message = "";
-            Queue<NetTransition> stubborn = getStubbornset(fireableTransitions, ns);
+            Queue<NetTransition> stubborn = getStubbornset(netTransitions, ns);
             foreach (var tr in stubborn)
             {
                 message += tr.Name + "\n";
@@ -285,10 +279,20 @@ public class StateSpace : IPDNPlugin
 
     public Queue<NetTransition> getStubbornset(List<NetTransition> transitions, NetState state)
     {
+        List<NetTransition> fireableTransitions = new List<NetTransition>();
+        foreach (var trans in transitions)
+        {
+            if (state.fireable(trans))
+            {
+                fireableTransitions.Add(trans);
+            }
+        }
+
         List<NetTransition> Ts = new List<NetTransition>();
         NetTransition Tk = transitions[0];
         int tmp = Int32.MaxValue;
-        foreach (var item in transitions)
+
+        foreach (var item in fireableTransitions)
         {
             List<NetTransition> Ttmp = new List<NetTransition>();
             Ttmp.Add(item);
@@ -310,7 +314,39 @@ public class StateSpace : IPDNPlugin
             }
         }
         Ts.Add(Tk);
-        return new Queue<NetTransition>(Ts);
+
+        int i = 0;
+
+        while (i < Ts.Count)
+        {
+            List<NetTransition> tmpList = new List<NetTransition>();
+            if (state.fireable(Ts[i]))
+            {
+                tmpList = Ts[i].F1(Ts,state);
+            }
+            else {
+                tmpList = Ts[i].F2(Ts, state);
+            }
+            foreach (var item in tmpList)
+            {
+                if (!Ts.Contains(item)) {
+                    Ts.Add(item);
+                }
+            }
+
+            ++i;
+        }
+
+        Queue<NetTransition> result = new Queue<NetTransition>();
+
+        foreach (var item in Ts)
+        {
+            if (state.fireable(item))
+            {
+                result.Enqueue(item);
+            }
+        }
+        return result;
     }
 
 }
