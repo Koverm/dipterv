@@ -52,19 +52,96 @@ namespace Stubbornforms
 
         }
 
+        public List<NetTransition> slowF1(List<NetTransition> transitions, NetState state)
+        {
+            List<NetTransition> result = new List<NetTransition>();
+
+            int place = -1;
+            for (int i = 0; i < state.States.Length; i++)
+            {
+                if (this.inEdges[i] > 0 && state.States[i] < this.inEdges[i])
+                {
+                    place = i;
+                    break;
+                }
+            }
+
+            if (place > -1)
+            {
+                foreach (var item in transitions)
+                {
+                    if (item.outEdges[place] > 0)
+                    {
+                        result.Add(item);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public List<NetTransition> slowF2(List<NetTransition> transitions, NetState state)
+        {
+            List<NetTransition> result = new List<NetTransition>();
+
+            foreach (var item in transitions)
+            {
+                for (int i = 0; i < state.States.Length; i++)
+                {
+                    if (this.inEdges[i] > 0 && item.inEdges[i] > 0)
+                    {
+                        result.Add(item);
+                        break;
+                    }
+                }
+            }
+
+            return result;
+        }
+
         public List<NetTransition> F1(List<NetTransition> transitions, NetState state){
             List<NetTransition> result = new List<NetTransition>();
 
             foreach (var item in transitions)
             {
-
+                for (int i = 0; i < state.States.Length; i++)
+                {
+                    if (this.inEdges[i] > 0)
+                    {
+                        if (state.States[i] < this.inEdges[i] && item.outEdges[i] < item.outEdges[i] && item.inEdges[i] <= state.States[i])
+                        {
+                            result.Add(item);
+                            break;
+                        }
+                    }
+                }
             }
 
             return result;
         }
         public List<NetTransition> F2(List<NetTransition> transitions, NetState state)
         {
+            List<NetTransition> result = new List<NetTransition>();
 
+            foreach (var item in transitions)
+            {
+                result.Add(item);
+            }
+
+            foreach (var item in transitions)
+            {
+                for (int i = 0; i < state.States.Length; i++)
+                {
+                    if (this.inEdges[i] > 0) {
+                        if (!(Math.Min(this.outEdges[i],item.outEdges[i])<Math.Min(this.inEdges[i],item.inEdges[i]) || Math.Min(this.outEdges[i],item.inEdges[i]) < Math.Min(this.inEdges[i],item.outEdges[i]))) {
+                            result.Remove(item);
+                            break;
+                        }
+                    }
+                }
+            }
+
+           return result;
         }
 
         public string InEdgesToString() {
