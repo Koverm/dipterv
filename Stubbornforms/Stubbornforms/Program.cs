@@ -5,14 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Stubbornforms;
+using System.Diagnostics;
 
 [AddinAuthor("Kövér Márton"), ToolVersion("1.5"),
 IncludeInPublicRelease]
 public class StateSpace : IPDNPlugin
 {
     private PDNAppDescriptor appDesc = null;
-
-    static public string filePath = @"D:\egyetem\dipterv1\result.dt";
 
     public void Initialize(PDNAppDescriptor appDesc)
     {
@@ -31,9 +30,6 @@ public class StateSpace : IPDNPlugin
             NetState.initCounter();
             Thread t = new Thread(new ParameterizedThreadStart(FssProcessingThread));
             t.Start(pn);
-            string message = "Result: " + filePath;
-            string title = "Places";
-            MessageBox.Show(message, title);
         }
         else
             MessageBox.Show("Please open or create a Petri net", "No active Petri net", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -41,8 +37,11 @@ public class StateSpace : IPDNPlugin
 
     public static void FssProcessingThread(object net) {
 
+        Stopwatch stopWatch = new Stopwatch();
+        stopWatch.Start();
+
         PetriNet pn = (PetriNet)net;
-        
+
         List<Place> places = pn.GetPlaces();
 
         NetState ns = new NetState(places);
@@ -92,7 +91,7 @@ public class StateSpace : IPDNPlugin
                 if (!visitedStates.ContainsKey(newState.States))
                 {
                     visitedStates.Add(newState.States, newState);
-                    
+
 
                     Queue<NetTransition> tmpQueue = new Queue<NetTransition>();
 
@@ -111,30 +110,9 @@ public class StateSpace : IPDNPlugin
             }
         }
 
-        using (System.IO.StreamWriter file =
-        new System.IO.StreamWriter(filePath))
-        {
-            if (visitedStates.Count <= 1048576)
-            {
-                file.WriteLine("digraph g{");
-                foreach (KeyValuePair<int[], NetState> entry in visitedStates)
-                {
-                    foreach (var nstate in entry.Value.Neighbours)
-                    {
-                        file.WriteLine(entry.Value.toString() + "->" + nstate.toString() + ";");
-                    }
-                }
-                file.Write("}");
-            }
-            else
-            {
-                file.WriteLine("Number of states: " + visitedStates.Count);
-            }
+        stopWatch.Stop();
 
-        }
-        string message = "Ready";
-        string title = "Processing ready";
-        MessageBox.Show(message, title);
+        writeResultToFile(visitedStates,stopWatch.ElapsedTicks);
 
     }
 
@@ -148,9 +126,6 @@ public class StateSpace : IPDNPlugin
             NetState.initCounter();
             Thread t = new Thread(new ParameterizedThreadStart(D1d2rssProcessingThreadSlow));
             t.Start(pn);
-            string message = "Result: " + filePath;
-            string title = "Places";
-            MessageBox.Show(message, title);
         }
         else
             MessageBox.Show("Please open or create a Petri net", "No active Petri net", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -165,9 +140,6 @@ public class StateSpace : IPDNPlugin
             NetState.initCounter();
             Thread t = new Thread(new ParameterizedThreadStart(D1d2rssProcessingThread));
             t.Start(pn);
-            string message = "Result: " + filePath;
-            string title = "Places";
-            MessageBox.Show(message, title);
         }
         else
             MessageBox.Show("Please open or create a Petri net", "No active Petri net", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -175,6 +147,8 @@ public class StateSpace : IPDNPlugin
 
     public static void D1d2rssProcessingThreadSlow(object net)
     {
+        Stopwatch stopWatch = new Stopwatch();
+        stopWatch.Start();
 
         PetriNet pn = (PetriNet)net;
 
@@ -224,7 +198,7 @@ public class StateSpace : IPDNPlugin
                     Queue<NetTransition> tmpQueue = new Queue<NetTransition>();
 
                     tmpQueue = getStubbornsetSlow(netTransitions, newState);
-                  
+
                     stateStack.Push(newState);
                     transitionStack.Push(tmpQueue);
                 }
@@ -232,34 +206,15 @@ public class StateSpace : IPDNPlugin
             }
         }
 
-        using (System.IO.StreamWriter file =
-        new System.IO.StreamWriter(filePath))
-        {
-            if (visitedStates.Count <= 1048576)
-            {
-                file.WriteLine("digraph g{");
-                foreach (KeyValuePair<int[], NetState> entry in visitedStates)
-                {
-                    foreach (var nstate in entry.Value.Neighbours)
-                    {
-                        file.WriteLine(entry.Value.toString() + "->" + nstate.toString() + ";");
-                    }
-                }
-                file.Write("}");
-            }
-            else
-            {
-                file.WriteLine("Number of states: " + visitedStates.Count);
-            }
+        stopWatch.Stop();
 
-        }
-        string message = "Ready";
-        string title = "Processing ready";
-        MessageBox.Show(message, title);
+        writeResultToFile(visitedStates, stopWatch.ElapsedTicks);
 
     }
     public static void D1d2rssProcessingThread(object net)
     {
+        Stopwatch stopWatch = new Stopwatch();
+        stopWatch.Start();
 
         PetriNet pn = (PetriNet)net;
 
@@ -317,30 +272,9 @@ public class StateSpace : IPDNPlugin
             }
         }
 
-        using (System.IO.StreamWriter file =
-        new System.IO.StreamWriter(filePath))
-        {
-            if (visitedStates.Count <= 1048576)
-            {
-                file.WriteLine("digraph g{");
-                foreach (KeyValuePair<int[], NetState> entry in visitedStates)
-                {
-                    foreach (var nstate in entry.Value.Neighbours)
-                    {
-                        file.WriteLine(entry.Value.toString() + "->" + nstate.toString() + ";");
-                    }
-                }
-                file.Write("}");
-            }
-            else
-            {
-                file.WriteLine("Number of states: " + visitedStates.Count);
-            }
+        stopWatch.Stop();
 
-        }
-        string message = "Ready";
-        string title = "Processing ready";
-        MessageBox.Show(message, title);
+        writeResultToFile(visitedStates, stopWatch.ElapsedTicks);
 
     }
 
@@ -353,12 +287,12 @@ public class StateSpace : IPDNPlugin
             List<NetTransition> netTransitions = new List<NetTransition>();
             List<Place> places = pn.GetPlaces();
             NetState ns = new NetState(places);
-            
+
             foreach (var tran in tranzitions)
             {
                 netTransitions.Add(new NetTransition(places, tran));
             }
-            
+
             string message = "";
             Queue<NetTransition> stubborn = getStubbornsetSlow(netTransitions, ns);
             foreach (var tr in stubborn)
@@ -467,7 +401,7 @@ public class StateSpace : IPDNPlugin
                 if (!Ttmp.Contains(item2))
                 {
                     for (int j = 0; j < state.States.Length; j++)
-                        if (item.inEdges[j] > 0 && item2.outEdges[j]<Math.Min(item2.inEdges[j],item.inEdges[j]))
+                        if (item.inEdges[j] > 0 && item2.outEdges[j] < Math.Min(item2.inEdges[j], item.inEdges[j]))
                         {
                             Ttmp.Add(item2);
                             break;
@@ -489,11 +423,11 @@ public class StateSpace : IPDNPlugin
             List<NetTransition> tmpList = new List<NetTransition>();
             if (!state.fireable(Ts[i]))
             {
-                tmpList = F1(transitions, state, Ts[i]);
+                tmpList = Ts[i].F1(transitions, state);
             }
             else
             {
-                tmpList = F2(transitions, state, Ts[i]);
+                tmpList = Ts[i].F2(transitions, state);
             }
             foreach (var item in tmpList)
             {
@@ -516,52 +450,43 @@ public class StateSpace : IPDNPlugin
         }
         return result;
     }
-    private static List<NetTransition> F1(List<NetTransition> transitions, NetState state, NetTransition nt)
-    {
-        List<NetTransition> result = new List<NetTransition>();
 
-        foreach (var item in transitions)
+    private static void writeResultToFile(Dictionary<int[], NetState> visitedStates, long elapsedTime)
+    {
+        //SaveFileDialog saveFileDialog1 = new SaveFileDialog();
+        //saveFileDialog1.Filter = "dot files|*.dt|all files (*.*)|*.*";
+        //saveFileDialog1.Title = "Save";
+        //saveFileDialog1.ShowDialog();
+
+        string filePath = "result" + Guid.NewGuid() + ".dt";
+
+        
+        // Save document
+        using (System.IO.StreamWriter file =
+        new System.IO.StreamWriter(filePath))
         {
-            for (int i = 0; i < state.States.Length; i++)
+
+            if (visitedStates.Count <= 1048576)
             {
-                if (nt.inEdges[i] > 0)
+                file.WriteLine("digraph g{");
+                foreach (KeyValuePair<int[], NetState> entry in visitedStates)
                 {
-                    if (state.States[i] < nt.inEdges[i] && item.outEdges[i] < item.outEdges[i] && item.inEdges[i] <= state.States[i])
+                    foreach (var nstate in entry.Value.Neighbours)
                     {
-                        result.Add(item);
-                        break;
+                        file.WriteLine(entry.Value.toString() + "->" + nstate.toString() + ";");
                     }
                 }
+                file.WriteLine("#Elapsedtime in ticks: " + elapsedTime);
+                file.Write("}");
             }
-        }
-
-        return result;
-    }
-    private static List<NetTransition> F2(List<NetTransition> transitions, NetState state, NetTransition nt)
-    {
-        List<NetTransition> result = new List<NetTransition>();
-        List<int> p = new List<int>();
-
-
-        for (int i = 0; i < state.States.Length; i++) {
-            if (nt.inEdges[i] > 0) {
-                p.Add(i);
-            }
-        }
-
-        foreach (var item in transitions)
-        {
-            int i = 0;
-            while (i < p.Count && (Math.Min(nt.outEdges[p[i]], item.outEdges[p[i]]) < Math.Min(nt.inEdges[p[i]], item.inEdges[p[i]]) ||
-                        Math.Min(nt.outEdges[p[i]], item.inEdges[p[i]]) < Math.Min(nt.inEdges[p[i]], item.outEdges[p[i]]))){
-                i++;
-            }
-            if (i >= p.Count)
+            else
             {
-                result.Add(item);
+                file.WriteLine("Number of states: " + visitedStates.Count);
+                file.WriteLine("Elapsedtime in ticks: " + elapsedTime);
             }
         }
 
-        return result;
+        MessageBox.Show("See result in: "+filePath,"Ready");
+
     }
 }
