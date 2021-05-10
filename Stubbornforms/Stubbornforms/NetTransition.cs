@@ -118,9 +118,6 @@ namespace Stubbornforms
                         }
                     }
                 }
-                if (result.Count >= 1) {
-                    break;
-                }
             }
 
             return result;
@@ -131,7 +128,7 @@ namespace Stubbornforms
             List<int> p = new List<int>();
 
 
-            for (int i = 0; i < state.States.Length; i++)
+            for (int i = 0; i < this.inEdges.Length; i++)
             {
                 if (this.inEdges[i] > 0)
                 {
@@ -142,12 +139,14 @@ namespace Stubbornforms
             foreach (var item in transitions)
             {
                 int i = 0;
-                while (i < p.Count && (Math.Min(this.outEdges[p[i]], item.outEdges[p[i]]) < Math.Min(this.inEdges[p[i]], item.inEdges[p[i]]) ||
-                            Math.Min(this.outEdges[p[i]], item.inEdges[p[i]]) < Math.Min(this.inEdges[p[i]], item.outEdges[p[i]])))
+                while (i < p.Count && !(Math.Min(this.outEdges[p[i]], item.outEdges[p[i]]) 
+                    < Math.Min(this.inEdges[p[i]], item.inEdges[p[i]]) ||
+                            Math.Min(this.outEdges[p[i]], item.inEdges[p[i]]) < 
+                            Math.Min(this.inEdges[p[i]], item.outEdges[p[i]])))
                 {
                     i++;
                 }
-                if (i >= p.Count)
+                if (i < p.Count)
                 {
                     result.Add(item);
                 }
@@ -155,6 +154,38 @@ namespace Stubbornforms
 
             return result;
         }
+
+        public List<NetTransition> F22(List<NetTransition> transitions, NetState state)
+        {
+            List<NetTransition> result = new List<NetTransition>();
+            List<int> p = new List<int>();
+
+
+            for (int i = 0; i < this.inEdges.Length; i++)
+            {
+                if (this.inEdges[i] > 0)
+                {
+                    p.Add(i);
+                }
+            }
+
+            foreach (var item in transitions)
+            {
+                int i = 0;
+                while (i < p.Count && !(Math.Min(this.outEdges[p[i]], item.outEdges[p[i]]) < Math.Min(this.inEdges[p[i]], item.inEdges[p[i]]) &&
+                            item.outEdges[p[i]] < Math.Min(this.inEdges[p[i]], item.inEdges[p[i]])))
+                {
+                    i++;
+                }
+                if (i < p.Count)
+                {
+                    result.Add(item);
+                }
+            }
+
+            return result;
+        }
+
 
         public string InEdgesToString() {
             string message = "";

@@ -19,7 +19,8 @@ public class StateSpace : IPDNPlugin
         appDesc.AddPluginMenuItem("State space\\Full state space", Fss);
         appDesc.AddPluginMenuItem("State space\\D1,D2 reduced state space slow", D1d2rssSlow);
         appDesc.AddPluginMenuItem("State space\\D1,D2 reduced state space", D1d2rss);
-        appDesc.AddPluginMenuItem("State space\\StubbornTest", Bar);
+        appDesc.AddPluginMenuItem("State space\\D1,D2 reduced state space improved", D1d2imp);
+        //appDesc.AddPluginMenuItem("State space\\StubbornTest", Bar);
     }
     private void Fss(object sender, EventArgs e)
     {
@@ -139,6 +140,20 @@ public class StateSpace : IPDNPlugin
         {
             NetState.initCounter();
             Thread t = new Thread(new ParameterizedThreadStart(D1d2rssProcessingThread));
+            t.Start(pn);
+        }
+        else
+            MessageBox.Show("Please open or create a Petri net", "No active Petri net", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+    }
+
+    private void D1d2imp(object sender, EventArgs e)
+    {
+        PetriNet pn = appDesc.CurrentPetriNet;
+
+        if (pn != null)
+        {
+            NetState.initCounter();
+            Thread t = new Thread(new ParameterizedThreadStart(D1d2impProcessingThread));
             t.Start(pn);
         }
         else
@@ -278,6 +293,73 @@ public class StateSpace : IPDNPlugin
 
     }
 
+    public static void D1d2impProcessingThread(object net)
+    {
+        Stopwatch stopWatch = new Stopwatch();
+        stopWatch.Start();
+
+        PetriNet pn = (PetriNet)net;
+
+        List<Place> places = pn.GetPlaces();
+
+        NetState ns = new NetState(places);
+
+        List<Transition> tranzitions = pn.GetTransitions();
+        List<NetTransition> netTransitions = new List<NetTransition>();
+
+        Dictionary<int[], NetState> visitedStates = new Dictionary<int[], NetState>(new IntArrayEqualityComparer());
+
+        visitedStates.Add(ns.States, ns);
+
+        foreach (var tran in tranzitions)
+        {
+            netTransitions.Add(new NetTransition(places, tran));
+        }
+
+        Stack<NetState> stateStack = new Stack<NetState>();
+        stateStack.Push(ns);
+
+        Queue<NetTransition> stubTransitions = getStubbornsetImp(netTransitions, ns);
+
+        Stack<Queue<NetTransition>> transitionStack = new Stack<Queue<NetTransition>>();
+        transitionStack.Push(stubTransitions);
+
+        while (stateStack.Count > 0 && transitionStack.Count > 0)
+        {
+            NetState stateTmp = stateStack.Pop();
+            Queue<NetTransition> transitionsTmp = transitionStack.Pop();
+
+            if (transitionsTmp.Count > 0)
+            {
+                NetTransition netTransitionTmp = transitionsTmp.Dequeue();
+
+                stateStack.Push(stateTmp);
+                transitionStack.Push(transitionsTmp);
+
+                NetState newState = new NetState(stateTmp, netTransitionTmp);
+
+                if (!visitedStates.ContainsKey(newState.States))
+                {
+                    visitedStates.Add(newState.States, newState);
+
+
+                    Queue<NetTransition> tmpQueue = new Queue<NetTransition>();
+
+                    tmpQueue = getStubbornsetImp(netTransitions, newState);
+
+                    stateStack.Push(newState);
+                    transitionStack.Push(tmpQueue);
+                }
+                visitedStates[stateTmp.States].Neighbours.Add(visitedStates[newState.States]);
+            }
+        }
+
+        stopWatch.Stop();
+
+        writeResultToFile(visitedStates, stopWatch.ElapsedTicks);
+
+    }
+
     public void Bar(object sender, EventArgs e)
     {
         PetriNet pn = appDesc.CurrentPetriNet;
@@ -396,16 +478,21 @@ public class StateSpace : IPDNPlugin
         {
             List<NetTransition> Ttmp = new List<NetTransition>();
             Ttmp.Add(item);
+
             foreach (var item2 in fireableTransitions)
             {
                 if (!Ttmp.Contains(item2))
                 {
                     for (int j = 0; j < state.States.Length; j++)
-                        if (item.inEdges[j] > 0 && item2.outEdges[j] < Math.Min(item2.inEdges[j], item.inEdges[j]))
-                        {
-                            Ttmp.Add(item2);
-                            break;
-                        }
+                    {
+
+                        if (item.inEdges[j] > 0)
+                            if( item2.outEdges[j] < Math.Min(item2.inEdges[j], item.inEdges[j]))
+                            {
+                                Ttmp.Add(item2);
+                                break;
+                            }
+                    }
                 }
             }
             if (Ttmp.Count < tmp)
@@ -434,6 +521,91 @@ public class StateSpace : IPDNPlugin
                 if (!Ts.Contains(item))
                 {
                     Ts.Add(item);
+                }
+            }
+            ++i;
+        }
+
+        Queue<NetTransition> result = new Queue<NetTransition>();
+
+        foreach (var item in Ts)
+        {
+            if (state.fireable(item))
+            {
+                result.Enqueue(item);
+            }
+        }
+        return result;
+    }
+    public static Queue<NetTransition> getStubbornsetImp(List<NetTransition> transitions, NetState state)
+    {
+        List<NetTransition> fireableTransitions = new List<NetTransition>();
+        foreach (var trans in transitions)
+        {
+            if (state.fireable(trans))
+            {
+                fireableTransitions.Add(trans);
+            }
+        }
+
+        List<NetTransition> AviableTransitions = new List<NetTransition>(transitions);
+        List<NetTransition> Ts = new List<NetTransition>();
+        Ts.Add(AviableTransitions[0]);
+
+        int tmp = Int32.MaxValue;
+
+        foreach (var item in fireableTransitions)
+        {
+            List<NetTransition> Ttmp = new List<NetTransition>();
+            Ttmp.Add(item);
+
+            foreach (var item2 in fireableTransitions)
+            {
+                if (!Ttmp.Contains(item2))
+                {
+                    for (int j = 0; j < state.States.Length; j++)
+                    {
+
+                        if (item.inEdges[j] > 0)
+                            if (item2.outEdges[j] < Math.Min(item2.inEdges[j], item.inEdges[j]))
+                            {
+                                Ttmp.Add(item2);
+                                break;
+                            }
+                    }
+                }
+            }
+            if (Ttmp.Count < tmp)
+            {
+                tmp = Ttmp.Count;
+                Ts = Ttmp;
+            }
+        }
+
+        foreach (var item in Ts)
+        {
+            AviableTransitions.Remove(item);
+        }
+
+        int i = 0;
+
+        while (i < Ts.Count)
+        {
+            List<NetTransition> tmpList = new List<NetTransition>();
+            if (!state.fireable(Ts[i]))
+            {
+                tmpList = Ts[i].F1(AviableTransitions, state);
+            }
+            else
+            {
+                tmpList = Ts[i].F22(AviableTransitions, state);
+            }
+            foreach (var item in tmpList)
+            {
+                if (!Ts.Contains(item))
+                {
+                    Ts.Add(item);
+                    AviableTransitions.Remove(item);
                 }
             }
             ++i;
