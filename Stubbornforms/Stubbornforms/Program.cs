@@ -648,13 +648,14 @@ public class StateSpace : IPDNPlugin
                         file.WriteLine(entry.Value.toString() + "->" + nstate.toString() + ";");
                     }
                 }
+                file.WriteLine("#Number of states: " + visitedStates.Count);
                 file.WriteLine("#Elapsedtime in ticks: " + elapsedTime);
                 file.Write("}");
             }
             else
             {
-                file.WriteLine("Number of states: " + visitedStates.Count);
-                file.WriteLine("Elapsedtime in ticks: " + elapsedTime);
+                file.WriteLine("#Number of states: " + visitedStates.Count);
+                file.WriteLine("#Elapsedtime in ticks: " + elapsedTime);
             }
         }
 
